@@ -1,7 +1,6 @@
 package haproxystatsd
 
 import (
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -58,20 +57,86 @@ func TestOneLogMessage(t *testing.T) {
 
 	select {
 	case msgs := <-sender.Ch:
-		fmt.Println(msgs)
+		expected := []string{"ares.http-frontend.cekarcek.neon.Tc:0|g",
+			"ares.http-frontend.cekarcek.neon.3xx:301|c",
+			"ares.http-frontend.cekarcek.neon.feconn:0|g",
+			"ares.http-frontend.cekarcek.neon.srv_queue:0|g",
+			"ares.http-frontend.cekarcek.neon.Tq:1|g",
+			"ares.http-frontend.cekarcek.neon.Tr:1|g",
+			"ares.http-frontend.cekarcek.neon.Tt:2|g",
+			"ares.http-frontend.cekarcek.neon.actconn:0|g",
+			"ares.http-frontend.cekarcek.neon.beconn:0|g",
+			"ares.http-frontend.cekarcek.neon.srv_conn:0|g",
+			"ares.http-frontend.cekarcek.neon.retries:0|g",
+			"ares.http-frontend.cekarcek.neon.backend_queue:0|g",
+			"ares.http-frontend.cekarcek.neon.Tw:0|g",
+		}
+
+		for _, e := range expected {
+			if sliceContains(msgs, e) == false {
+				t.Errorf("Expected message %s not found", e)
+				t.Fail()
+			}
+		}
 
 		return
 	case <-time.After(time.Second):
-		t.Fatal("No message received")
+		t.Error("No message received")
+		t.Fail()
 	}
 
 }
 
 func TestParsePrefixKeys(t *testing.T) {
-
 	tplStr := "{{.frontend_name}}.{{.backend_name}}"
-
 	keys := parsePrefixKeys(tplStr)
+	if (len(keys) == 2 && sliceContains(keys, "frontend_name") && sliceContains(keys, "backend_name")) == false {
+		t.Fail()
+	}
+}
 
-	fmt.Println(keys)
+func TestStatusCode2Class(t *testing.T) {
+	for i := 100; i < 200; i++ {
+		if statusCode2Class(i) != "1xx" {
+			t.Fail()
+		}
+	}
+	for i := 200; i < 300; i++ {
+		if statusCode2Class(i) != "2xx" {
+			t.Fail()
+		}
+	}
+	for i := 300; i < 400; i++ {
+		if statusCode2Class(i) != "3xx" {
+			t.Fail()
+		}
+	}
+	for i := 400; i < 500; i++ {
+		if statusCode2Class(i) != "4xx" {
+			t.Fail()
+		}
+	}
+	for i := 500; i < 500; i++ {
+		if statusCode2Class(i) != "5xx" {
+			t.Fail()
+		}
+	}
+	if statusCode2Class(666) != "xxx" {
+		t.Fail()
+	}
+}
+
+func TestParseInt(t *testing.T) {
+	if parseInt("-1") != -1 {
+		t.Fail()
+	}
+	if parseInt("42") != 42 {
+		t.Fail()
+	}
+	if parseInt(" 200 ") != 200 {
+		t.Fail()
+	}
+	if parseInt("abc") != 0 {
+		t.Fail()
+	}
 }

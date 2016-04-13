@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"regexp"
@@ -154,7 +155,7 @@ func statusCode2Class(code int) string {
 }
 
 func parseInt(in string) int {
-	i64, _ := strconv.ParseInt(in, 10, 32)
+	i64, _ := strconv.ParseInt(strings.TrimSpace(in), 10, 32)
 	return int(i64)
 }
 
