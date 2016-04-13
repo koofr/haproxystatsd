@@ -16,7 +16,7 @@ import (
 var (
 	// this MUST contain some named groups
 	DefaultLogPattern = regexp.MustCompile(`.* \[.*\] (?P<frontend_name>.*?) (?P<backend_name>.*?)/(?P<server_name>.*?) (?P<Tq>\d+)/(?P<Tw>\d+)/(?P<Tc>\d+)/(?P<Tr>\d+)/(?P<Tt>\d+) (?P<status_code>\d+) \d+ .*? .*? .* (?P<actconn>\d+)/(?P<feconn>\d+)/(?P<beconn>\d+)/(?P<srv_conn>\d+)/(?P<retries>\d+) (?P<srv_queue>\d+)/(?P<backend_queue>\d+)`)
-	// Use names from named groups in regex to construct bucket template
+	// Use names from named groups in regex to construct bucket prefix
 	DefaultBucketTemplate = "{{.TAG}}.{{.frontend_name}}.{{.backend_name}}.{{.server_name}}"
 )
 
