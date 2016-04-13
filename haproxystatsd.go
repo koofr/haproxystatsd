@@ -3,6 +3,7 @@ package haproxystatsd
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"strconv"
 	"text/template"
 
@@ -14,8 +15,9 @@ import (
 
 var (
 	// this MUST contain some named groups
-	DefaultLogPattern     = regexp.MustCompile(`.* \[.*\] (?P<frontend_name>.*?) (?P<backend_name>.*?)/(?P<server_name>.*?) (?P<Tq>\d+)/(?P<Tw>\d+)/(?P<Tc>\d+)/(?P<Tr>\d+)/(?P<Tt>\d+) (?P<status_code>\d+) \d+ .*? .*? .* (?P<actconn>\d+)/(?P<feconn>\d+)/(?P<beconn>\d+)/(?P<srv_conn>\d+)/(?P<retries>\d+) (?P<srv_queue>\d+)/(?P<backend_queue>\d+)`)
-	DefaultBucketTemplate = "{{.frontend_name}}.{{.backend_name}}.{{.server_name}}"
+	DefaultLogPattern = regexp.MustCompile(`.* \[.*\] (?P<frontend_name>.*?) (?P<backend_name>.*?)/(?P<server_name>.*?) (?P<Tq>\d+)/(?P<Tw>\d+)/(?P<Tc>\d+)/(?P<Tr>\d+)/(?P<Tt>\d+) (?P<status_code>\d+) \d+ .*? .*? .* (?P<actconn>\d+)/(?P<feconn>\d+)/(?P<beconn>\d+)/(?P<srv_conn>\d+)/(?P<retries>\d+) (?P<srv_queue>\d+)/(?P<backend_queue>\d+)`)
+	// Use names from named groups in regex to construct bucket template
+	DefaultBucketTemplate = "{{.TAG}}.{{.frontend_name}}.{{.backend_name}}.{{.server_name}}"
 )
 
 type statsdSender interface {
@@ -25,7 +27,7 @@ type statsdSender interface {
 type Config struct {
 	StatsdAddr     string
 	SyslogBindAddr string
-	NodeName       string
+	NodeTag        string
 	LogPattern     string
 	BucketTemplate string
 	DryRun         bool
@@ -37,6 +39,7 @@ type HaproxyStatsd struct {
 	logPattern *regexp.Regexp
 	bucketTpl  *template.Template
 	prefixKeys []string
+	nodeTag    string
 }
 
 func New(cfg *Config) (hs *HaproxyStatsd, err error) {
@@ -51,6 +54,12 @@ func New(cfg *Config) (hs *HaproxyStatsd, err error) {
 	}
 	if cfg.BucketTemplate == "" {
 		cfg.BucketTemplate = DefaultBucketTemplate
+	}
+
+	if cfg.NodeTag == "" {
+		hs.nodeTag, _ = os.Hostname()
+	} else {
+		hs.nodeTag = cfg.NodeTag
 	}
 
 	// compile stuff
@@ -99,6 +108,8 @@ func (h *HaproxyStatsd) Handle(parts syslogparser.LogParts, woot int64, err erro
 			}
 		}
 	}
+
+	kv["TAG"] = h.nodeTag
 
 	msgs := h.createStatsdMessages(kv, kvdata)
 	h.sender.Send(msgs)
