@@ -52,7 +52,23 @@ func main() {
 }
 
 func run(c *cli.Context) {
-	cfg := haproxystatsd.Config{}
+
+	statsdAddr := c.GlobalString("statsdAddr")
+	bind := c.GlobalString("bind")
+	logPattern := c.GlobalString("logPattern")
+	bucketPrefixTpl := c.GlobalString("bucketPrefixTpl")
+	nodeTag := c.GlobalString("nodeTag")
+	dryRun := c.GlobalBool("dryRun")
+
+	cfg := haproxystatsd.Config{
+		StatsdAddr:     statsdAddr,
+		SyslogBindAddr: bind,
+		NodeTag:        nodeTag,
+		LogPattern:     logPattern,
+		BucketTemplate: bucketPrefixTpl,
+		DryRun:         dryRun,
+	}
+
 	hs, err := haproxystatsd.New(&cfg)
 
 	if err != nil {

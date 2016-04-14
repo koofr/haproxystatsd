@@ -49,6 +49,14 @@ func New(cfg *Config) (hs *HaproxyStatsd, err error) {
 		srv: syslog.NewServer(),
 	}
 
+	if cfg.DryRun {
+		hs.sender = NewMockStatsdSender()
+	} else {
+		if hs.sender, err = NewStatsdSender(cfg.StatsdAddr); err != nil {
+			return
+		}
+	}
+
 	// set defaults
 	if cfg.LogPattern == "" {
 		hs.logPattern = DefaultLogPattern
