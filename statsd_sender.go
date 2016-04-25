@@ -7,7 +7,8 @@ import (
 )
 
 type StatsdSender struct {
-	conn *net.UDPConn
+	conn  *net.UDPConn
+	msgCh chan []string
 }
 
 func NewStatsdSender(addr string) (s *StatsdSender, err error) {
@@ -19,19 +20,29 @@ func NewStatsdSender(addr string) (s *StatsdSender, err error) {
 	if err != nil {
 		return
 	}
-	s = &StatsdSender{conn}
+	s = &StatsdSender{
+		conn:  conn,
+		msgCh: make(chan []string, 1024),
+	}
+	go s.sendloop()
 	return
 }
 
 func (s *StatsdSender) Send(msgs []string) {
-	var buf *bytes.Buffer
+	s.msgCh <- msgs
+}
 
-	for _, msg := range msgs {
-		buf.WriteString(msg)
-		buf.WriteByte(10)
+func (s *StatsdSender) sendloop() {
+
+	buf := new(bytes.Buffer)
+	for msgs := range s.msgCh {
+		for _, msg := range msgs {
+			buf.WriteString(msg)
+			buf.WriteByte(10)
+		}
+		buf.WriteTo(s.conn)
+		buf.Reset()
 	}
-
-	s.conn.Write(buf.Bytes())
 }
 
 type MockStatsdSender struct{}

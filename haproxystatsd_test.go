@@ -26,7 +26,7 @@ func (s *MockSender) Send(msgs []string) {
 }
 
 func NewMockSender() *MockSender {
-	return &MockSender{make(chan []string)}
+	return &MockSender{make(chan []string, 10000)}
 }
 
 func sendSyslogMsg(msg string) (err error) {
@@ -80,6 +80,30 @@ func TestOneLogMessage(t *testing.T) {
 		}
 
 		return
+	case <-time.After(time.Second):
+		t.Error("No message received")
+		t.Fail()
+	}
+}
+
+func TestManyLogMessages(t *testing.T) {
+	hs, err := New(defaultConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sender := NewMockSender()
+	hs.sender = sender
+	if err := hs.Boot(); err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 100; i++ {
+		go sendSyslogMsg(ExampleSyslog)
+	}
+
+	select {
+	case _ = <-sender.Ch:
+		break
 	case <-time.After(time.Second):
 		t.Error("No message received")
 		t.Fail()

@@ -3,7 +3,6 @@ package haproxystatsd
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"text/template"
@@ -65,11 +64,7 @@ func New(cfg *Config) (hs *HaproxyStatsd, err error) {
 		cfg.BucketTemplate = DefaultBucketTemplate
 	}
 
-	if cfg.NodeTag == "" {
-		hs.nodeTag, _ = os.Hostname()
-	} else {
-		hs.nodeTag = cfg.NodeTag
-	}
+	hs.nodeTag = cfg.NodeTag
 
 	// compile stuff
 	if hs.logPattern, err = regexp.Compile(cfg.LogPattern); err != nil {

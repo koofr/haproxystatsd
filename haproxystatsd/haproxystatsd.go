@@ -69,6 +69,8 @@ func run(c *cli.Context) {
 		DryRun:         dryRun,
 	}
 
+	fmt.Printf("Config %+v\n", cfg)
+
 	hs, err := haproxystatsd.New(&cfg)
 
 	if err != nil {
